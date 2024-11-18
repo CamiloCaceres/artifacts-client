@@ -1,0 +1,158 @@
+// composables/useGameSocket.ts
+import { io, Socket } from "socket.io-client";
+import type { BotStatus, BotConfig } from "~/types/bot";
+
+export const useGameSocket = () => {
+  const config = useRuntimeConfig();
+  const botsStatus = ref<Record<string, BotStatus>>({});
+  const botsConfig = ref<Record<string, BotConfig>>({});
+  const logs = ref<
+    Array<{ characterName: string; message: string; timestamp: string }>
+  >([]);
+  const socket = ref<Socket | null>(null);
+  const isConnected = ref(false);
+  const clientCount = ref(0);
+  const reconnectAttempts = ref(0);
+  const maxReconnectAttempts = 5;
+
+  onMounted(() => {
+    if (!socket.value) {
+      connect();
+    }
+  });
+
+  onUnmounted(() => {
+    socket.value?.disconnect();
+  });
+
+  const connect = () => {
+    if (socket.value?.connected) return;
+
+    socket.value = io(config.public.wsUrl || "http://localhost:3001", {
+      reconnection: true,
+      reconnectionAttempts: maxReconnectAttempts,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
+
+    socket.value.on("connect", () => {
+      isConnected.value = true;
+      reconnectAttempts.value = 0;
+      console.log("Connected to game server");
+    });
+
+    socket.value.on("disconnect", () => {
+      isConnected.value = false;
+      console.log("Disconnected from game server");
+    });
+
+    socket.value.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      reconnectAttempts.value++;
+
+      if (reconnectAttempts.value >= maxReconnectAttempts) {
+        socket.value?.disconnect();
+        console.error("Max reconnection attempts reached");
+      }
+    });
+
+    // Initial state on connection
+    socket.value.on(
+      "initialState",
+      ({ botsStatus: initialStatus, botsConfig: initialConfig, recentLogs }) => {
+        botsStatus.value = initialStatus;
+        botsConfig.value = initialConfig;
+        logs.value = recentLogs;
+      }
+    );
+
+    socket.value.on(
+      "botStatus",
+      ({
+        characterName,
+        status,
+      }: {
+        characterName: string;
+        status: BotStatus;
+      }) => {
+        botsStatus.value = {
+          ...botsStatus.value,
+          [characterName]: status,
+        };
+      }
+    );
+
+    socket.value.on(
+      "botConfigUpdate",
+      ({
+        characterName,
+        config,
+      }: {
+        characterName: string;
+        config: BotConfig;
+      }) => {
+        botsConfig.value = {
+          ...botsConfig.value,
+          [characterName]: config,
+        };
+      }
+    );
+
+    socket.value.on("botsStatus", (status: Record<string, BotStatus>) => {
+      botsStatus.value = status;
+    });
+
+    socket.value.on(
+      "botLog",
+      (log: { characterName: string; message: string; timestamp: string }) => {
+        logs.value.unshift(log);
+        if (logs.value.length > 100) logs.value.pop();
+      }
+    );
+  };
+
+  // Add error handling to all actions
+  const safeEmit = async (event: string, ...args: any[]) => {
+    if (!isConnected.value) {
+      console.warn("Not connected to server");
+      return false;
+    }
+
+    try {
+      socket.value?.emit(event, ...args);
+      return true;
+    } catch (error) {
+      console.error(`Error emitting ${event}:`, error);
+      return false;
+    }
+  };
+
+  // Connect when component is mounted
+  onMounted(() => {
+    if (!socket.value) {
+      connect();
+    }
+  });
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    socket.value?.disconnect();
+    socket.value = null;
+  });
+
+  return {
+    isConnected,
+    botsStatus,
+    botsConfig,
+    logs,
+    clientCount,
+    reconnectAttempts,
+    startBot: (characterName: string) => safeEmit("startBot", characterName),
+    stopBot: (characterName: string) => safeEmit("stopBot", characterName),
+    startAllBots: () => safeEmit("startAllBots"),
+    stopAllBots: () => safeEmit("stopAllBots"),
+    updateBotConfig: (characterName: string, config: Partial<BotConfig>) =>
+      safeEmit("updateBotConfig", { characterName, config }),
+  };
+};
