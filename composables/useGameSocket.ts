@@ -1,6 +1,6 @@
 // composables/useGameSocket.ts
 import { io, Socket } from "socket.io-client";
-import type { BotStatus, BotConfig } from "~/types/bot";
+import type { BotStatus, BotConfig, CraftingCycle } from "~/types/bot";
 
 export const useGameSocket = () => {
   const config = useRuntimeConfig();
@@ -128,6 +128,23 @@ export const useGameSocket = () => {
     }
   };
 
+  // Bot control methods
+  const startBot = (characterName: string) => safeEmit("startBot", characterName);
+  const stopBot = (characterName: string) => safeEmit("stopBot", characterName);
+  const startAllBots = () => safeEmit("startAllBots");
+  const stopAllBots = () => safeEmit("stopAllBots");
+
+  // Configuration methods
+  const updateBotConfig = (characterName: string, config: Partial<BotConfig>) =>
+    safeEmit("updateBotConfig", { characterName, config });
+
+  // Crafting methods
+  const updateCraftingCycle = (characterName: string, cycle: CraftingCycle) =>
+    safeEmit("updateCraftingCycle", { characterName, cycle });
+
+  const removeCraftingCycle = (characterName: string) =>
+    safeEmit("removeCraftingCycle", characterName);
+
   // Connect when component is mounted
   onMounted(() => {
     if (!socket.value) {
@@ -148,11 +165,12 @@ export const useGameSocket = () => {
     logs,
     clientCount,
     reconnectAttempts,
-    startBot: (characterName: string) => safeEmit("startBot", characterName),
-    stopBot: (characterName: string) => safeEmit("stopBot", characterName),
-    startAllBots: () => safeEmit("startAllBots"),
-    stopAllBots: () => safeEmit("stopAllBots"),
-    updateBotConfig: (characterName: string, config: Partial<BotConfig>) =>
-      safeEmit("updateBotConfig", { characterName, config }),
+    startBot,
+    stopBot,
+    startAllBots,
+    stopAllBots,
+    updateBotConfig,
+    updateCraftingCycle,
+    removeCraftingCycle,
   };
 };
