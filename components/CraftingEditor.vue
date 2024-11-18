@@ -301,7 +301,7 @@
   // Reset editor
   const resetEditor = () => {
     currentCycle.value = {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2),,
       name: '',
       steps: []
     };
