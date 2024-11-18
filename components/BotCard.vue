@@ -64,6 +64,8 @@
               <option value="sunflower">Sunflower</option>
               <option value="gudgeon">Gudgeon</option>
               <option value="shrimp">Shrimp</option>
+              <option value="coal">Coal</option>
+              <option value="birch">Birch Tree</option>
             </select>
           </div>
 
