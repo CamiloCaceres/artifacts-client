@@ -1,6 +1,6 @@
 <!-- components/CraftingStats.vue -->
 <template>
-    <div class="crafting-stats space-y-4">
+    <div class="space-y-4">
       <!-- Cycle Information -->
       <div class="p-3 bg-blue-50 rounded-lg">
         <div class="flex justify-between items-center mb-2">
@@ -167,12 +167,3 @@
   });
   </script>
   
-  <style scoped>
-  .crafting-stats {
-    @apply transition-all duration-300;
-  }
-  
-  .stat-value {
-    @apply transition-all duration-300;
-  }
-  </style>
