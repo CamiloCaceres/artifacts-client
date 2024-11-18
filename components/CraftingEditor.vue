@@ -199,7 +199,7 @@
   
   const selectedCycleId = ref<string>('');
   const currentCycle = ref<CraftingCycle>({
-    id: crypto.randomUUID(),
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
     name: '',
     steps: []
   });
