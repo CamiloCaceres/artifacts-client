@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui"],
   runtimeConfig: {
     public: {
-      wsUrl: process.env.WS_URL || 'http://localhost:3001'
+      wsUrl: process.env.WS_URL
     }
   }
 })
