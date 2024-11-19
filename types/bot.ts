@@ -29,12 +29,11 @@ export interface BotConfig {
     resource?: string;
     baseUrl?: string;
     craftingCycle?: CraftingCycle;
+    fightLocation?: Position;
+    selectedMonster?: string;
+    monsterSkin?: string;    
   }
-export interface BotWorkerInstance {
-  worker: Worker;
-  status: BotStatus;
-  config?: BotConfig;
-}
+
 
 export interface BotStatus {
   isRunning: boolean;
@@ -48,18 +47,7 @@ export interface BotStatus {
   lastError?: string;
   craftingStats?: CraftingStats;
 }
-// Worker message types
-export interface WorkerMessage {
-  type: "config" | "stop";
-  data?: BotConfig;
-}
 
-export interface WorkerResponse {
-  type: "status" | "log" | "error" | "crafting_update";
-  data: Partial<BotStatus> | string;
-  logType?: "info" | "error" | "success" | "warning";
-  details?: any;
-}
 
 // API response types
 export interface ActionResponse {
@@ -125,4 +113,20 @@ export interface TradeStats {
   itemsTraded: Map<string, number>;
   totalTrades: number;
   failedTrades: number;
+}
+export interface Monster {
+  name: string;
+  skin: string;
+  x: number;
+  y: number;
+  content: {
+    type: "monster";
+    code: string;
+  };
+}
+
+export interface MonsterLocation {
+  code: string;
+  skin: string;
+  position: Position;
 }

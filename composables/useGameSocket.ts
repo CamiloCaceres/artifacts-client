@@ -1,6 +1,6 @@
 // composables/useGameSocket.ts
 import { io, Socket } from "socket.io-client";
-import type { BotStatus, BotConfig, CraftingCycle } from "~/types/bot";
+import type { BotStatus, BotConfig, CraftingCycle, MonsterLocation } from "~/types/bot";
 
 export const useGameSocket = () => {
   const config = useRuntimeConfig();
@@ -14,6 +14,7 @@ export const useGameSocket = () => {
   const clientCount = ref(0);
   const reconnectAttempts = ref(0);
   const maxReconnectAttempts = 5;
+  const monsters = ref<{ code: string; locations: MonsterLocation[] }[]>([]);
 
   onMounted(() => {
     if (!socket.value) {
@@ -60,10 +61,11 @@ export const useGameSocket = () => {
     // Initial state on connection
     socket.value.on(
       "initialState",
-      ({ botsStatus: initialStatus, botsConfig: initialConfig, recentLogs }) => {
+      ({ botsStatus: initialStatus, botsConfig: initialConfig, recentLogs, monsters: initialMonsters }) => {
         botsStatus.value = initialStatus;
         botsConfig.value = initialConfig;
         logs.value = recentLogs;
+        monsters.value = initialMonsters;
       }
     );
 
@@ -110,6 +112,16 @@ export const useGameSocket = () => {
         if (logs.value.length > 100) logs.value.pop();
       }
     );
+
+    // Monster-related events
+    socket.value.on("monsterLocations", (data: { code: string; locations: MonsterLocation[] }) => {
+      const monsterIndex = monsters.value.findIndex(m => m.code === data.code);
+      if (monsterIndex >= 0) {
+        monsters.value[monsterIndex].locations = data.locations;
+      } else {
+        monsters.value.push(data);
+      }
+    });
   };
 
   // Add error handling to all actions
@@ -145,6 +157,10 @@ export const useGameSocket = () => {
   const removeCraftingCycle = (characterName: string) =>
     safeEmit("removeCraftingCycle", characterName);
 
+  // Monster methods
+  const getMonsterLocations = (monsterCode: string) =>
+    safeEmit("getMonsterLocations", monsterCode);
+
   // Connect when component is mounted
   onMounted(() => {
     if (!socket.value) {
@@ -165,6 +181,7 @@ export const useGameSocket = () => {
     logs,
     clientCount,
     reconnectAttempts,
+    monsters,
     startBot,
     stopBot,
     startAllBots,
@@ -172,5 +189,6 @@ export const useGameSocket = () => {
     updateBotConfig,
     updateCraftingCycle,
     removeCraftingCycle,
+    getMonsterLocations,
   };
 };

@@ -1,6 +1,6 @@
 <!-- components/BotCard.vue -->
 <template>
-  <div class="bg-white rounded-lg shadow">
+  <div :class="['bg-white', 'dark:bg-gray-800', 'rounded-lg', 'shadow']">
     <div class="p-6">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center space-x-3">
@@ -8,37 +8,41 @@
             class="w-3 h-3 rounded-full"
             :class="status.isRunning ? 'bg-green-500' : 'bg-gray-300'"
           />
-          <h2 class="text-lg font-semibold text-gray-900">{{ name }}</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ name }}
+          </h2>
         </div>
         <div class="flex items-center space-x-2">
-          <button
+          <UButton
+            color="green"
             @click="startBot(name)"
             :disabled="status.isRunning"
-            class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Start
-          </button>
-          <button
+          </UButton>
+          <UButton
+            color="red"
             @click="stopBot(name)"
             :disabled="!status.isRunning"
-            class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Stop
-          </button>
+          </UButton>
         </div>
       </div>
 
       <!-- Bot Configuration -->
-      <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+      <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
         <div class="space-y-3">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Action Type
             </label>
             <select
               v-model="localConfig.actionType"
               @change="updateConfig"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-600 dark:text-white"
               :disabled="status.isRunning"
             >
               <option value="fight">Fight</option>
@@ -47,26 +51,71 @@
             </select>
           </div>
 
+          <!-- Monster Selection -->
+          <div v-if="localConfig.actionType === 'fight'" class="space-y-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Select Monster
+            </label>
+            <UInputMenu
+              v-model="selectedMonster"
+              :options="monsterOptions"
+              option-attribute="label"
+              value-attribute="code"
+              :disabled="status.isRunning"
+              placeholder="Select a monster"
+              @update:model-value="updateMonsterSelection"
+            >
+              <template #option="{ option: monster }">
+                <div class="flex items-center gap-2">
+                  <span class="truncate">{{
+                    formatMonsterName(monster.code)
+                  }}</span>
+                  <span class="text-xs text-gray-500"
+                    >({{ monster.locations.length }} locations)</span
+                  >
+                </div>
+              </template>
+            </UInputMenu>
+
+            <!-- Monster Location Selection -->
+            <div
+              v-if="selectedMonster && monsterLocations.length > 1"
+              class="mt-2"
+            >
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Select Location
+              </label>
+              <USelect
+                v-model="selectedLocation"
+                :options="locationOptions"
+                :disabled="status.isRunning"
+                @update:model-value="updateMonsterLocation"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Select location"
+              >
+                <template #option="{ option }">
+                  <span>Position ({{ option.x }}, {{ option.y }})</span>
+                </template>
+              </USelect>
+            </div>
+          </div>
+
           <div v-if="localConfig.actionType === 'gather'">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Resource
             </label>
-            <select
+            <USelect
               v-model="localConfig.resource"
-              @change="updateConfig"
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              :options="resourceOptions"
+              @update:model-value="updateConfig"
               :disabled="status.isRunning"
-            >
-              <option value="copper">Copper</option>
-              <option value="iron">Iron</option>
-              <option value="ash_tree">Ash Tree</option>
-              <option value="spruce_tree">Spruce Tree</option>
-              <option value="sunflower">Sunflower</option>
-              <option value="gudgeon">Gudgeon</option>
-              <option value="shrimp">Shrimp</option>
-              <option value="coal">Coal</option>
-              <option value="birch">Birch Tree</option>
-            </select>
+              placeholder="Select resource"
+            />
           </div>
 
           <div v-if="localConfig.actionType === 'craft'">
@@ -74,26 +123,29 @@
               <label class="block text-sm font-medium text-gray-700">
                 Crafting Cycle
               </label>
-              <button
+              <UButton
+                color="blue"
                 v-if="localConfig.craftingCycle"
                 @click="openCraftingEditor"
-                class="text-sm text-blue-500 hover:text-blue-600"
                 :disabled="status.isRunning"
               >
                 Edit Cycle
-              </button>
+              </UButton>
             </div>
             <div v-if="!localConfig.craftingCycle" class="text-center py-4">
-              <button
+              <UButton
+                color="blue"
+                variant="link"
                 @click="openCraftingEditor"
-                class="text-sm text-blue-500 hover:text-blue-600"
                 :disabled="status.isRunning"
               >
                 Configure Crafting Cycle
-              </button>
+              </UButton>
             </div>
             <div v-else class="text-sm">
-              <div class="font-medium">{{ localConfig.craftingCycle.name }}</div>
+              <div class="font-medium">
+                {{ localConfig.craftingCycle.name }}
+              </div>
               <div class="text-gray-600">
                 {{ localConfig.craftingCycle.steps.length }} steps
               </div>
@@ -133,12 +185,16 @@
       <!-- Stats -->
       <div class="space-y-3">
         <!-- HP Bar -->
-        <div v-if="status.currentHp !== undefined && status.maxHp !== undefined">
-          <div class="flex justify-between text-sm text-gray-600 mb-1">
+        <div
+          v-if="status.currentHp !== undefined && status.maxHp !== undefined"
+        >
+          <div
+            class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1"
+          >
             <span>HP</span>
             <span>{{ status.currentHp }}/{{ status.maxHp }}</span>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
             <div
               class="bg-green-500 rounded-full h-2 transition-all duration-500"
               :style="{
@@ -212,12 +268,13 @@
 </template>
 
 <script setup lang="ts">
-import { BotStatus, BotConfig } from "~/types/bot";
+import { BotStatus, BotConfig, Position, MonsterLocation } from "~/types/bot";
 
 const props = defineProps<{
   name: string;
   status: BotStatus;
   config: BotConfig;
+  monsters?: { code: string; locations: MonsterLocation[] }[];
 }>();
 
 const emit = defineEmits<{
@@ -228,6 +285,52 @@ const { startBot, stopBot, updateBotConfig } = useGameSocket();
 
 // Create a local copy of the config for editing
 const localConfig = ref<BotConfig>({ ...props.config });
+const selectedMonster = ref<string | null>(
+  props.config.selectedMonster || null
+);
+const selectedLocation = ref<Position | null>(null);
+
+// Transform monsters data for UInputMenu
+const monsterOptions = computed(() => {
+  if (!props.monsters) return [];
+  return props.monsters.map((monster) => ({
+    code: monster.code,
+    label: formatMonsterName(monster.code),
+    locations: monster.locations,
+  }));
+});
+
+// Get locations for selected monster
+const monsterLocations = computed(() => {
+  if (!selectedMonster.value || !props.monsters) return [];
+  const monster = props.monsters.find((m) => m.code === selectedMonster.value);
+  return monster
+    ? monster.locations.map((l) => ({ x: l.position.x, y: l.position.y }))
+    : [];
+});
+
+// Format monster name from snake_case to Title Case
+function formatMonsterName(name: string): string {
+  return name
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+// Transform locations into a format suitable for USelect
+const locationOptions = computed(() => {
+  if (!selectedMonster.value || !props.monsters) return [];
+  const monster = props.monsters.find((m) => m.code === selectedMonster.value);
+  if (!monster) return [];
+
+  return monster.locations.map((loc) => ({
+    label: `Position (${loc.position.x}, ${loc.position.y})`,
+    value: { x: loc.position.x, y: loc.position.y },
+    x: loc.position.x,
+    y: loc.position.y,
+    skin: loc.skin,
+  }));
+});
 
 // Computed property to check if there are any items to display
 const hasItems = computed(() => {
@@ -242,13 +345,65 @@ watch(
   () => props.config,
   (newConfig) => {
     localConfig.value = { ...newConfig };
+    selectedMonster.value = newConfig.selectedMonster || null;
   },
   { deep: true }
 );
 
+// Update monster selection
+function updateMonsterSelection(monster: string) {
+  const monsterData = props.monsters?.find((m) => m.code === monster);
+  if (!monsterData) return;
+
+  selectedMonster.value = monster;
+
+  // If there's only one location, automatically select it
+  if (monsterData.locations.length === 1) {
+    const location = monsterData.locations[0];
+    selectedLocation.value = {
+      x: location.position.x,
+      y: location.position.y,
+    };
+    localConfig.value = {
+      ...localConfig.value,
+      selectedMonster: monster,
+      monsterSkin: location.skin,
+      fightLocation: { x: location.position.x, y: location.position.y },
+    };
+  } else {
+    // If there are multiple locations, clear the selected location
+    selectedLocation.value = null;
+    localConfig.value = {
+      ...localConfig.value,
+      selectedMonster: monster,
+      fightLocation: undefined,
+    };
+  }
+
+  updateConfig();
+}
+
+// Update monster location
+function updateMonsterLocation(location: Position) {
+  selectedLocation.value = location;
+
+  // Find the skin for this location
+  const monster = props.monsters?.find((m) => m.code === selectedMonster.value);
+  const locationData = monster?.locations.find(
+    (loc) => loc.position.x === location.x && loc.position.y === location.y
+  );
+
+  localConfig.value = {
+    ...localConfig.value,
+    fightLocation: location,
+    monsterSkin: locationData?.skin,
+  };
+
+  updateConfig();
+}
+
 // Update config when local changes are made
 const updateConfig = () => {
-  // If switching away from crafting, remove the crafting cycle
   if (
     localConfig.value.actionType !== "craft" &&
     localConfig.value.craftingCycle
@@ -264,4 +419,17 @@ const updateConfig = () => {
 const openCraftingEditor = () => {
   emit("openCraftingEditor", props.name);
 };
+
+// Add resource options
+const resourceOptions = [
+  { label: 'Copper', value: 'copper' },
+  { label: 'Iron', value: 'iron' },
+  { label: 'Ash Tree', value: 'ash_tree' },
+  { label: 'Spruce Tree', value: 'spruce_tree' },
+  { label: 'Sunflower', value: 'sunflower' },
+  { label: 'Gudgeon', value: 'gudgeon' },
+  { label: 'Shrimp', value: 'shrimp' },
+  { label: 'Coal', value: 'coal' },
+  { label: 'Birch Tree', value: 'birch' }
+];
 </script>
