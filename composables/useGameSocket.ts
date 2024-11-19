@@ -1,6 +1,6 @@
 // composables/useGameSocket.ts
 import { io, Socket } from "socket.io-client";
-import type { BotStatus, BotConfig, CraftingCycle, MonsterLocation } from "~/types/bot";
+import type { BotStatus, BotConfig, CraftingCycle, MonsterLocation, ResourceLocation } from "~/types/bot";
 
 export const useGameSocket = () => {
   const config = useRuntimeConfig();
@@ -15,6 +15,7 @@ export const useGameSocket = () => {
   const reconnectAttempts = ref(0);
   const maxReconnectAttempts = 5;
   const monsters = ref<{ code: string; locations: MonsterLocation[] }[]>([]);
+  const resources = ref<{ code: string; locations: ResourceLocation[] }[]>([]);
 
   onMounted(() => {
     if (!socket.value) {
@@ -61,11 +62,12 @@ export const useGameSocket = () => {
     // Initial state on connection
     socket.value.on(
       "initialState",
-      ({ botsStatus: initialStatus, botsConfig: initialConfig, recentLogs, monsters: initialMonsters }) => {
+      ({ botsStatus: initialStatus, botsConfig: initialConfig, recentLogs, monsters: initialMonsters, resources: initialResources }) => {
         botsStatus.value = initialStatus;
         botsConfig.value = initialConfig;
         logs.value = recentLogs;
         monsters.value = initialMonsters;
+        resources.value = initialResources;
       }
     );
 
@@ -122,6 +124,16 @@ export const useGameSocket = () => {
         monsters.value.push(data);
       }
     });
+
+    // Resource-related events
+    socket.value.on("resourceLocations", (data: { code: string; locations: ResourceLocation[] }) => {
+      const resourceIndex = resources.value.findIndex(r => r.code === data.code);
+      if (resourceIndex >= 0) {
+        resources.value[resourceIndex].locations = data.locations;
+      } else {
+        resources.value.push(data);
+      }
+    });
   };
 
   // Add error handling to all actions
@@ -161,6 +173,10 @@ export const useGameSocket = () => {
   const getMonsterLocations = (monsterCode: string) =>
     safeEmit("getMonsterLocations", monsterCode);
 
+  // Resource methods
+  const getResourceLocations = (resourceCode: string) =>
+    safeEmit("getResourceLocations", resourceCode);
+
   // Connect when component is mounted
   onMounted(() => {
     if (!socket.value) {
@@ -182,6 +198,7 @@ export const useGameSocket = () => {
     clientCount,
     reconnectAttempts,
     monsters,
+    resources,
     startBot,
     stopBot,
     startAllBots,
@@ -190,5 +207,6 @@ export const useGameSocket = () => {
     updateCraftingCycle,
     removeCraftingCycle,
     getMonsterLocations,
+    getResourceLocations,
   };
 };

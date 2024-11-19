@@ -31,7 +31,8 @@ export interface BotConfig {
     craftingCycle?: CraftingCycle;
     fightLocation?: Position;
     selectedMonster?: string;
-    monsterSkin?: string;    
+    monsterSkin?: string;
+    resourceSkin?: string;
   }
 
 
@@ -70,7 +71,7 @@ export interface CraftingStep {
   type: "withdraw" | "deposit" | "craft" | "move";
   item?: string;
   quantity?: number;
-  location?: "bank" | "woodcutting" | "mining";
+  location?: "bank" | "woodcutting" | "mining" | "jewelry" | "gearcrafting" | "weaponcrafting" | "cooking" | "alchemy";
   position?: Position;
   materialsUsed?: Map<string, number>;
   itemsCrafted?: Map<string, number>;
@@ -80,17 +81,6 @@ export interface CharacterResponse {
   data: Character[];
 }
 
-// Resource positions type safety
-export type ResourceType =
-  | "copper"
-  | "ash_tree"
-  | "sunflower"
-  | "gudgeon"
-  | "iron"
-  | "spruce_tree"
-  | "shrimp"
-  | "coal"
-  | "birch";
 
 export interface CraftingCycle {
   id: string;
@@ -129,4 +119,23 @@ export interface MonsterLocation {
   code: string;
   skin: string;
   position: Position;
+}
+
+// Resource-related interfaces
+export interface Resource {
+  name: string;
+  skin: string;
+  x: number;
+  y: number;
+  content: {
+    type: "resource";
+    code: string;
+  };
+}
+
+export interface ResourceLocation {
+  code: string;
+  skin: string;
+  position: Position;
+  name: string;
 }

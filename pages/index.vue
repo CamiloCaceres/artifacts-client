@@ -39,6 +39,7 @@
           :status="status"
           :config="botsConfig[name]"
           :monsters="monsters"
+          :resources="resources"
           @openCraftingEditor="openCraftingEditor"
         />
       </div>
@@ -63,7 +64,7 @@
 import { computed, ref } from 'vue';
 import type { CraftingCycle } from '~/types/bot';
 
-const { botsStatus, botsConfig, updateCraftingCycle, monsters } = useGameSocket();
+const { botsStatus, botsConfig, updateCraftingCycle, monsters, resources } = useGameSocket();
 
 // Crafting editor state
 const showCraftingEditor = ref(false);
