@@ -59,7 +59,7 @@
               Select Monster
             </label>
             <UInputMenu
-              v-model="selectedMonster"
+              v-model="selectedMonster as any"
               :options="monsterOptions"
               option-attribute="label"
               value-attribute="code"
@@ -90,7 +90,7 @@
                 Select Location
               </label>
               <USelect
-                v-model="selectedLocation"
+                v-model="selectedLocation as any"
                 :options="locationOptions"
                 :disabled="status.isRunning"
                 @update:model-value="updateMonsterLocation"
@@ -107,11 +107,13 @@
 
           <!-- Resource Selection -->
           <div v-if="localConfig.actionType === 'gather'" class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Select Resource
             </label>
             <UInputMenu
-              v-model="selectedResource"
+              v-model="selectedResource as any"
               :options="resourceOptions"
               option-attribute="label"
               value-attribute="code"
@@ -121,19 +123,28 @@
             >
               <template #option="{ option: resource }">
                 <div class="flex items-center gap-2">
-                  <span class="truncate">{{ formatResourceName(resource.code) }}</span>
-                  <span class="text-xs text-gray-500">({{ resource.locations.length }} locations)</span>
+                  <span class="truncate">{{
+                    formatResourceName(resource.code)
+                  }}</span>
+                  <span class="text-xs text-gray-500"
+                    >({{ resource.locations.length }} locations)</span
+                  >
                 </div>
               </template>
             </UInputMenu>
 
             <!-- Resource Location Selection -->
-            <div v-if="selectedResource && resourceLocations.length > 1" class="mt-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div
+              v-if="selectedResource && resourceLocations.length > 1"
+              class="mt-2"
+            >
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Select Location
               </label>
               <USelect
-                v-model="selectedResourceLocation"
+                v-model="selectedResourceLocation as any"
                 :options="resourceLocationOptions"
                 :disabled="status.isRunning"
                 @update:model-value="updateResourceLocation"
@@ -142,7 +153,9 @@
                 placeholder="Select location"
               >
                 <template #option="{ option }">
-                  <span>{{ option.name }} ({{ option.x }}, {{ option.y }})</span>
+                  <span
+                    >{{ option.name }} ({{ option.x }}, {{ option.y }})</span
+                  >
                 </template>
               </USelect>
             </div>
@@ -194,8 +207,12 @@
       <!-- Stats -->
       <div class="space-y-3">
         <!-- HP Bar -->
-        <div v-if="status.currentHp !== undefined && status.maxHp !== undefined">
-          <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
+        <div
+          v-if="status.currentHp !== undefined && status.maxHp !== undefined"
+        >
+          <div
+            class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1"
+          >
             <span>HP</span>
             <span>{{ status.currentHp }}/{{ status.maxHp }}</span>
           </div>
@@ -216,7 +233,13 @@
 </template>
 
 <script setup lang="ts">
-import { BotStatus, BotConfig, Position, MonsterLocation, ResourceLocation } from "~/types/bot";
+import type {
+  BotStatus,
+  BotConfig,
+  Position,
+  MonsterLocation,
+  ResourceLocation,
+} from "~/types/bot";
 
 const props = defineProps<{
   name: string;
@@ -234,7 +257,9 @@ const { startBot, stopBot, updateBotConfig } = useGameSocket();
 
 // Create a local copy of the config for editing
 const localConfig = ref<BotConfig>({ ...props.config });
-const selectedMonster = ref<string | null>(props.config.selectedMonster || null);
+const selectedMonster = ref<string | null>(
+  props.config.selectedMonster || null
+);
 const selectedLocation = ref<Position | null>(null);
 const selectedResource = ref<string | null>(props.config.resource || null);
 const selectedResourceLocation = ref<Position | null>(null);
@@ -271,7 +296,9 @@ const monsterLocations = computed(() => {
 // Get locations for selected resource
 const resourceLocations = computed(() => {
   if (!selectedResource.value || !props.resources) return [];
-  const resource = props.resources.find((r) => r.code === selectedResource.value);
+  const resource = props.resources.find(
+    (r) => r.code === selectedResource.value
+  );
   return resource ? resource.locations : [];
 });
 
@@ -287,7 +314,7 @@ function formatMonsterName(name: string): string {
 function formatResourceName(name: string): string {
   return name
     .split("_")
-    .filter(word => !['rocks', 'fishing', 'spot'].includes(word)) // Filter out common suffixes
+    .filter((word) => !["rocks", "fishing", "spot"].includes(word)) // Filter out common suffixes
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
@@ -310,7 +337,9 @@ const locationOptions = computed(() => {
 // Transform resource locations into options for USelect
 const resourceLocationOptions = computed(() => {
   if (!selectedResource.value || !props.resources) return [];
-  const resource = props.resources.find((r) => r.code === selectedResource.value);
+  const resource = props.resources.find(
+    (r) => r.code === selectedResource.value
+  );
   if (!resource) return [];
 
   return resource.locations.map((loc) => ({
@@ -417,7 +446,9 @@ function updateMonsterLocation(location: Position) {
 function updateResourceLocation(location: Position) {
   selectedResourceLocation.value = location;
 
-  const resource = props.resources?.find((r) => r.code === selectedResource.value);
+  const resource = props.resources?.find(
+    (r) => r.code === selectedResource.value
+  );
   const locationData = resource?.locations.find(
     (loc) => loc.position.x === location.x && loc.position.y === location.y
   );
