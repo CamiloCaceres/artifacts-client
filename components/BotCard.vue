@@ -59,7 +59,7 @@
               Select Monster
             </label>
             <UInputMenu
-              v-model="selectedMonster as any"
+              :model-value="selectedMonster"
               :options="monsterOptions"
               option-attribute="label"
               value-attribute="code"
@@ -90,7 +90,7 @@
                 Select Location
               </label>
               <USelect
-                v-model="selectedLocation as any"
+                :model-value="selectedLocation"
                 :options="locationOptions"
                 :disabled="status.isRunning"
                 @update:model-value="updateMonsterLocation"
@@ -113,7 +113,7 @@
               Select Resource
             </label>
             <UInputMenu
-              v-model="selectedResource as any"
+              :model-value="selectedResource"
               :options="resourceOptions"
               option-attribute="label"
               value-attribute="code"
@@ -144,7 +144,7 @@
                 Select Location
               </label>
               <USelect
-                v-model="selectedResourceLocation as any"
+                :model-value="selectedResourceLocation"
                 :options="resourceLocationOptions"
                 :disabled="status.isRunning"
                 @update:model-value="updateResourceLocation"
