@@ -5,12 +5,20 @@
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center space-x-3">
           <div
-            class="w-3 h-3 rounded-full"
-            :class="status.isRunning ? 'bg-green-500' : 'bg-gray-300'"
+            class="w-3 h-3 rounded-full transition-all duration-300"
+            :class="status.isRunning 
+              ? 'bg-green-500 shadow-lg shadow-green-500/50 animate-pulse' 
+              : 'bg-gray-300'"
           />
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ name }}
           </h2>
+          <div v-if="status.isRunning" class="flex items-center">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <UIcon name="i-heroicons-play" class="w-3 h-3 mr-1" />
+              Active
+            </span>
+          </div>
         </div>
         <div class="flex items-center space-x-2">
           <UButton
@@ -30,8 +38,73 @@
         </div>
       </div>
 
-      <!-- Bot Configuration -->
-      <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <!-- Bot Running Status -->
+      <div v-if="status.isRunning" class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div class="flex items-center space-x-3 mb-3">
+          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100">
+              {{ getActionDescription() }}
+            </h3>
+            <p v-if="status.lastAction" class="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              {{ status.lastAction }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Action-specific stats -->
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <!-- Fight Stats -->
+          <template v-if="localConfig.actionType === 'fight'">
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Total XP</div>
+              <div class="font-semibold text-gray-900 dark:text-white">{{ formatNumber(status.totalXp) }}</div>
+            </div>
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Gold Earned</div>
+              <div class="font-semibold text-gray-900 dark:text-white">{{ formatNumber(status.totalGold) }}</div>
+            </div>
+          </template>
+
+          <!-- Gather Stats -->
+          <template v-if="localConfig.actionType === 'gather'">
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Resources Gathered</div>
+              <div class="font-semibold text-gray-900 dark:text-white">{{ getTotalItemsCollected() }}</div>
+            </div>
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Total XP</div>
+              <div class="font-semibold text-gray-900 dark:text-white">{{ formatNumber(status.totalXp) }}</div>
+            </div>
+          </template>
+
+          <!-- Craft Stats -->
+          <template v-if="localConfig.actionType === 'craft' && status.craftingStats">
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Items Crafted</div>
+              <div class="font-semibold text-gray-900 dark:text-white">{{ status.craftingStats.totalCrafts }}</div>
+            </div>
+            <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+              <div class="text-xs text-gray-600 dark:text-gray-400">Cycle Progress</div>
+              <div class="font-semibold text-gray-900 dark:text-white">
+                {{ status.craftingStats.cycleProgress }}%
+              </div>
+            </div>
+          </template>
+
+          <!-- Common Stats -->
+          <div class="bg-white/50 dark:bg-gray-800/50 rounded px-3 py-2">
+            <div class="text-xs text-gray-600 dark:text-gray-400">Total Actions</div>
+            <div class="font-semibold text-gray-900 dark:text-white">{{ formatNumber(status.totalActions) }}</div>
+          </div>
+          <div v-if="status.lastError" class="bg-red-50 dark:bg-red-900/20 rounded px-3 py-2 col-span-2">
+            <div class="text-xs text-red-800 dark:text-red-200">{{ status.lastError }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bot Configuration (hidden when running) -->
+      <div v-else class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
         <div class="space-y-3">
           <div>
             <label
@@ -204,29 +277,37 @@
         </div>
       </div>
 
-      <!-- Stats -->
-      <div class="space-y-3">
-        <!-- HP Bar -->
-        <div
-          v-if="status.currentHp !== undefined && status.maxHp !== undefined"
-        >
-          <div
-            class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1"
-          >
-            <span>HP</span>
-            <span>{{ status.currentHp }}/{{ status.maxHp }}</span>
-          </div>
-          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-            <div
-              class="bg-green-500 rounded-full h-2 transition-all duration-500"
-              :style="{
-                width: `${(status.currentHp / status.maxHp) * 100}%`,
-              }"
-            />
-          </div>
+      <!-- HP Bar (always visible when we have HP data) -->
+      <div
+        v-if="status.currentHp !== undefined && status.maxHp !== undefined"
+        :class="[
+          'p-3 rounded-lg mb-4',
+          status.isRunning 
+            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+            : 'bg-gray-50 dark:bg-gray-700'
+        ]"
+      >
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Health</span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">
+            {{ status.currentHp }}/{{ status.maxHp }}
+          </span>
         </div>
-
-        <!-- Rest of the stats component remains unchanged -->
+        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+          <div
+            :class="[
+              'rounded-full h-3 transition-all duration-500',
+              getHpBarColor(status.currentHp, status.maxHp)
+            ]"
+            :style="{
+              width: `${Math.max((status.currentHp / status.maxHp) * 100, 5)}%`,
+            }"
+          />
+        </div>
+        <div v-if="status.isRunning && getHpPercentage(status.currentHp, status.maxHp) < 20" 
+             class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+          ⚠️ Low health!
+        </div>
       </div>
     </div>
   </div>
@@ -470,4 +551,55 @@ const updateConfig = () => {
 const openCraftingEditor = () => {
   emit("openCraftingEditor", props.name);
 };
+
+// Helper functions for the running status display
+function getActionDescription(): string {
+  switch (localConfig.value.actionType) {
+    case 'fight':
+      const monsterName = localConfig.value.selectedMonster 
+        ? formatMonsterName(localConfig.value.selectedMonster)
+        : 'monsters';
+      return `Fighting ${monsterName}`;
+    case 'gather':
+      const resourceName = localConfig.value.resource 
+        ? formatResourceName(localConfig.value.resource)
+        : 'resources';
+      return `Gathering ${resourceName}`;
+    case 'craft':
+      const cycleName = localConfig.value.craftingCycle?.name || 'items';
+      return `Crafting ${cycleName}`;
+    default:
+      return 'Running';
+  }
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+}
+
+function getTotalItemsCollected(): number {
+  if (!props.status.itemsCollected) return 0;
+  
+  let total = 0;
+  for (const [, quantity] of props.status.itemsCollected) {
+    total += quantity;
+  }
+  return total;
+}
+
+function getHpPercentage(current: number, max: number): number {
+  return Math.round((current / max) * 100);
+}
+
+function getHpBarColor(current: number, max: number): string {
+  const percentage = getHpPercentage(current, max);
+  if (percentage <= 20) return 'bg-red-500';
+  if (percentage <= 50) return 'bg-yellow-500';
+  return 'bg-green-500';
+}
 </script>

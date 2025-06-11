@@ -421,12 +421,12 @@ const CRAFTING_PRESETS = [
   {
     id: "copper-bar-crafting",
     name: "Copper Bar Production",
-    description: "Basic copper ore to copper bar conversion, start in bank with 100 spaces in the inventory",
+    description: "Basic copper ore to copper bar conversion, start in bank with 90+ spaces in the inventory",
     steps: [
       {
         type: "withdraw",
         item: "copper_ore",
-        quantity: 96,
+        quantity: 90,
       },
       {
         type: "move",
@@ -434,8 +434,8 @@ const CRAFTING_PRESETS = [
       },
       {
         type: "craft",
-        item: "copper_bar",
-        quantity: 12,
+        item: "copper",
+        quantity: 9,
       },
       {
         type: "move",
@@ -443,8 +443,8 @@ const CRAFTING_PRESETS = [
       },
       {
         type: "deposit",
-        item: "copper_bar",
-        quantity: 12,
+        item: "copper",
+        quantity: 9,
       },
     ],
   },
